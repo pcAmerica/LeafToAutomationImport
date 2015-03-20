@@ -41,3 +41,7 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+/LeafToAutomationImport/bin
+/LeafToAutomationImport/obj
+/LeafToAutomationImport/*.user
+/*.suo
