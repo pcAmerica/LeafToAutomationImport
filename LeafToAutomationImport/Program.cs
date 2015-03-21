@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using dotNetExt;
 using pcAmerica.Desktop.POS.ServiceModel.Operations;
 using pcAmerica.Desktop.POS.ServiceModel.Operations.Menus;
 using pcAmerica.Desktop.POS.ServiceModel.Types;
 using pcAmerica.Desktop.POS.ServiceModel.Types.Payments;
+using PowerArgs;
+using Item = pcAmerica.Desktop.POS.ServiceModel.Types.Item;
+using ModifierGroup = pcAmerica.Desktop.POS.ServiceModel.Types.ModifierGroup;
+using Store = pcAmerica.Desktop.POS.ServiceModel.Types.Store;
 
 namespace LeafToAutomationImport
 {
@@ -29,6 +34,18 @@ namespace LeafToAutomationImport
             public Item PosItem;
         }
 
+        public class CommandLineArgs
+        {
+            [ArgRequired]
+            public string LeafExportFullPath { get; set; }
+
+            [ArgDefaultValue("http://localhost:52454")]
+            public string ServerUrl { get; set; }
+
+            [ArgDefaultValue("VSw9i0ujqf40Kx")]
+            public string ApiKey { get; set; }
+        }
+
         private static Dictionary<string, Guid> _taxMap;
         private static Dictionary<string, Guid> _printerMap;
         private static Dictionary<string, Guid> _jobCodeMap;
@@ -36,37 +53,102 @@ namespace LeafToAutomationImport
         private static Dictionary<string, Guid> _modifierMap;
         private static Dictionary<string, ModifierGroup> _modifierGroupsMap;
         private static Dictionary<string, Item> _itemMap;
-        private static Dictionary<string, Guid> _categoryPanelMap;
+        private static int TaxRateCounter;
+        private static int TaxGroupCounter;
+        private static int TaxGroupTaxRateCounter;
+        private static int TenderCounter;
+        private static int PaymentProfileTenderCounter;
+        private static int KitchenPrinterCounter;
+        private static int JobcodeCounter;
+        private static int EmployeeCounter;
+        private static int EmployeeEmailCounter;
+        private static int EmployeePhoneCounter;
+        private static int EmployeeJobcodeCounter;
+        private static int DepartmentCounter;
+        private static int ModifierCounter;
+        private static int ModifierGroupCounter;
+        private static int ModifierGroupMemberCounter;
+        private static int ItemCounter;
+        private static int ItemModifierGroupCounter;
+        private static int KitchenPrinterItemMappingCounter;
+        private static int MenuPanelCounter;
+        private static int MenuButtonCounter;
 
         private static void Main(string[] args)
         {
-            _taxMap = new Dictionary<string, Guid>();
-            _printerMap = new Dictionary<string, Guid>();
-            _jobCodeMap = new Dictionary<string, Guid>();
-            _departmentMap = new Dictionary<string, Guid>();
-            _modifierMap = new Dictionary<string, Guid>();
-            _modifierGroupsMap = new Dictionary<string, ModifierGroup>();
-            _itemMap = new Dictionary<string, Item>();
-            _categoryPanelMap = new Dictionary<string, Guid>();
-
-            using (var reader = System.IO.File.OpenText("site_export_sample.json"))
+            try
             {
-                var leafStore = ServiceStack.Text.JsonSerializer.DeserializeFromReader<LeafDataModel.Store>(reader);
+                var parsed = Args.Parse<CommandLineArgs>(args);
 
-                var api = new Api {Apikey = "as46QsUS8RjTchZg", BaseUri = "http://localhost:52454"};
+                _taxMap = new Dictionary<string, Guid>();
+                _printerMap = new Dictionary<string, Guid>();
+                _jobCodeMap = new Dictionary<string, Guid>();
+                _departmentMap = new Dictionary<string, Guid>();
+                _modifierMap = new Dictionary<string, Guid>();
+                _modifierGroupsMap = new Dictionary<string, ModifierGroup>();
+                _itemMap = new Dictionary<string, Item>();
 
-                SetupStore(api, leafStore);
-                SetupTaxes(api, leafStore);
-                SetupTenders(api, leafStore);
-                SetupPrinters(api, leafStore);
-                SetupJobCodes(api, leafStore);
-                SetupUsers(api, leafStore);
-                SetupDepartments(api, leafStore);
-                SetupModifiers(api, leafStore);
-                SetupModifierGroups(api, leafStore);
-                SetupItems(api, leafStore);
-                SetupMenu(api, leafStore);
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                using (var reader = System.IO.File.OpenText(parsed.LeafExportFullPath))
+                {
+                    var leafStore = ServiceStack.Text.JsonSerializer.DeserializeFromReader<LeafDataModel.Store>(reader);
+
+                    var api = new Api {Apikey = parsed.ApiKey, BaseUri = parsed.ServerUrl};
+
+                    SetupStore(api, leafStore);
+                    SetupTaxes(api, leafStore);
+                    SetupTenders(api, leafStore);
+                    SetupPrinters(api, leafStore);
+                    SetupJobCodes(api, leafStore);
+                    SetupUsers(api, leafStore);
+                    SetupDepartments(api, leafStore);
+                    SetupModifiers(api, leafStore);
+                    SetupModifierGroups(api, leafStore);
+                    SetupItems(api, leafStore);
+                    SetupMenu(api, leafStore);
+                }
+
+                stopwatch.Stop();
+
+                PrintResults();
+
+                Console.WriteLine("Import complete, duration: {0}", stopwatch.Elapsed);
             }
+            catch (ArgException ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ArgUsage.GenerateUsageFromTemplate<CommandLineArgs>());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        private static void PrintResults()
+        {
+            Console.WriteLine("TaxRateCounter; : {0}", TaxRateCounter);
+            Console.WriteLine("TaxGroupCounter : {0}", TaxGroupCounter);
+            Console.WriteLine("TaxGroupTaxRateCounter : {0}", TaxGroupTaxRateCounter);
+            Console.WriteLine("TenderCounter : {0}", TenderCounter);
+            Console.WriteLine("PaymentProfileTenderCounter : {0}", PaymentProfileTenderCounter);
+            Console.WriteLine("KitchenPrinterCounter : {0}", KitchenPrinterCounter);
+            Console.WriteLine("JobcodeCounter : {0}", JobcodeCounter);
+            Console.WriteLine("EmployeeCounter : {0}", EmployeeCounter);
+            Console.WriteLine("EmployeeEmailCounter : {0}", EmployeeEmailCounter);
+            Console.WriteLine("EmployeePhoneCounter : {0}", EmployeePhoneCounter);
+            Console.WriteLine("EmployeeJobcodeCounter : {0}", EmployeeJobcodeCounter);
+            Console.WriteLine("DepartmentCounter : {0}", DepartmentCounter);
+            Console.WriteLine("ModifierCounter : {0}", ModifierCounter);
+            Console.WriteLine("ModifierGroupCounter : {0}", ModifierGroupCounter);
+            Console.WriteLine("ModifierGroupMemberCounter : {0}", ModifierGroupMemberCounter);
+            Console.WriteLine("ItemCounter : {0}", ItemCounter);
+            Console.WriteLine("ItemModifierGroupCounter : {0}", ItemModifierGroupCounter);
+            Console.WriteLine("KitchenPrinterItemMappingCounter : {0}", KitchenPrinterItemMappingCounter);
+            Console.WriteLine("MenuPanelCounter : {0}", MenuPanelCounter);
+            Console.WriteLine("MenuButtonCounter : {0}", MenuButtonCounter);
         }
 
         private static void SetupStore(Api api, LeafDataModel.Store leafStore)
@@ -86,6 +168,8 @@ namespace LeafToAutomationImport
             };
 
             api.Put(posStore);
+
+            Console.WriteLine("Updated Store");
         }
 
         private static void SetupTaxes(Api api, LeafDataModel.Store leafStore)
@@ -109,9 +193,13 @@ namespace LeafToAutomationImport
 
         private static void SetupTenders(Api api, LeafDataModel.Store leafStore)
         {
+            var station = api.Get(new GetConfiguration {IncludeStations = true}).Stations.First();
+            var paymentConfig =
+                api.Get(new GetPaymentConfigList()).Configs.First(o => o.ProcessorName.ToLower().Contains("manual"));
+
             foreach (var paymeth in leafStore.site_pay_methods)
             {
-                CreateTender(api, paymeth);
+                CreateTender(api, paymeth, station, paymentConfig);
             }
         }
 
@@ -136,8 +224,14 @@ namespace LeafToAutomationImport
 
             taxRate = api.Post(taxRate);
 
+            TaxRateCounter++;
+
+            Console.WriteLine("Created tax rate {0}", taxRate.Name);
+
             var taxGroup = new TaxGroup {Name = taxName};
             taxGroup = api.Post(taxGroup);
+
+            TaxGroupCounter++;
 
             var association = new TaxGroupTaxRate
             {
@@ -147,10 +241,15 @@ namespace LeafToAutomationImport
 
             api.Post(association);
 
+            TaxGroupTaxRateCounter++;
+
+            Console.WriteLine("Created tax group {0}", taxGroup.Name);
+
             return new Mapping {LeafId = taxName, PosId = taxGroup.Id.GetValueOrDefault()};
         }
 
-        private static void CreateTender(Api api, LeafDataModel.SitePayMethod leafTender)
+        private static void CreateTender(Api api, LeafDataModel.SitePayMethod leafTender, Station station,
+            PaymentConfiguration paymentConfig)
         {
             var tenders = api.Get(new TenderQuery {Limit = 100});
 
@@ -201,7 +300,25 @@ namespace LeafToAutomationImport
                 tender.TenderKind = TenderKind.Gift;
             }
 
-            api.Post(tender);
+            tender = api.Post(tender);
+
+            TenderCounter++;
+
+            Console.WriteLine("Created tender {0}", tender.LongDescription);
+
+            var tenderProfileAssociation = new PaymentProfileTender
+            {
+                PaymentConfigurationId = paymentConfig.Id.GetValueOrDefault(),
+                PaymentProfileId = station.PaymentProfileId.GetValueOrDefault(),
+                TenderId = tender.Id.GetValueOrDefault()
+            };
+
+            api.Post(tenderProfileAssociation);
+
+            PaymentProfileTenderCounter++;
+
+            Console.WriteLine("Associated tender {0} with payment profile {1}", tender.LongDescription,
+                station.PaymentProfile.Name);
         }
 
         private static void SetupPrinters(Api api, LeafDataModel.Store leafStore)
@@ -225,6 +342,10 @@ namespace LeafToAutomationImport
             var printer = new KitchenPrinter {Name = leafPrinter.printerName};
 
             printer = api.Post(printer);
+
+            KitchenPrinterCounter++;
+
+            Console.WriteLine("Created printer {0}", printer.Name);
 
             return new Mapping {LeafId = leafPrinter.id, PosId = printer.Id.GetValueOrDefault()};
         }
@@ -258,6 +379,10 @@ namespace LeafToAutomationImport
 
             jobCode = api.Post(jobCode);
 
+            JobcodeCounter++;
+
+            Console.WriteLine("Created jobcode {0}", jobCode.Name);
+
             return new Mapping {LeafId = leafJobCode.id, PosId = jobCode.Id.GetValueOrDefault()};
         }
 
@@ -288,6 +413,10 @@ namespace LeafToAutomationImport
 
             employee = api.Post(employee);
 
+            EmployeeCounter++;
+
+            Console.WriteLine("Created employee {0}", employee.DisplayName);
+
             if (!leafUser.email.IsNullOrEmpty())
             {
                 var email = new EmployeeEmail
@@ -297,6 +426,8 @@ namespace LeafToAutomationImport
                     EntityId = employee.Id
                 };
                 api.Post(email);
+
+                EmployeeEmailCounter++;
             }
 
             if (!leafUser.phone.IsNullOrEmpty())
@@ -308,6 +439,8 @@ namespace LeafToAutomationImport
                     EntityId = employee.Id
                 };
                 api.Post(phone);
+
+                EmployeePhoneCounter++;
             }
 
             foreach (var leafJobCode in leafUser.job_code_users)
@@ -318,6 +451,8 @@ namespace LeafToAutomationImport
                     JobcodeId = _jobCodeMap[leafJobCode.job_code_id]
                 };
                 api.Post(jobCode);
+
+                EmployeeJobcodeCounter++;
             }
         }
 
@@ -349,6 +484,10 @@ namespace LeafToAutomationImport
                 department.Description = department.UserFriendlyId;
 
             department = api.Post(department);
+
+            DepartmentCounter++;
+
+            Console.WriteLine("Created department {0}", department.Description);
 
             return new Mapping {LeafId = leafCategory.id, PosId = department.Id.GetValueOrDefault()};
         }
@@ -395,6 +534,10 @@ namespace LeafToAutomationImport
 
             modifier = api.Post(modifier);
 
+            ModifierCounter++;
+
+            Console.WriteLine("Created modifier {0}", modifier.Name);
+
             return new Mapping {LeafId = leafModifier.id, PosId = modifier.Id.GetValueOrDefault()};
         }
 
@@ -435,6 +578,10 @@ namespace LeafToAutomationImport
 
             group = api.Post(group);
 
+            ModifierGroupCounter++;
+
+            Console.WriteLine("Created modifier group {0}", group.Name);
+
             foreach (var modMember in from leafModMember in leafModifierGroup.modifier_group_sub_items
                 where _modifierMap.ContainsKey(leafModMember.modifier_id)
                 select new ModifierGroupMember
@@ -445,6 +592,10 @@ namespace LeafToAutomationImport
                 })
             {
                 api.Post(modMember);
+
+                ModifierGroupMemberCounter++;
+
+                Console.WriteLine("Created modifier group member {0}", modMember.ItemId);
             }
 
             return new ModGroupMapping {LeafId = leafModifierGroup.id, PosModifierGroup = group};
@@ -496,6 +647,10 @@ namespace LeafToAutomationImport
 
             item = api.Post(item);
 
+            ItemCounter++;
+
+            Console.WriteLine("Created item {0}", item.Name);
+
             int modGroupCounter = 0;
             foreach (var leafModGroup in leafItem.modifier_item_groups)
             {
@@ -515,6 +670,11 @@ namespace LeafToAutomationImport
                 };
                 api.Post(itemModGroup);
 
+                ItemModifierGroupCounter++;
+
+                Console.WriteLine("Associated modifier group {0} with item {1}", itemModGroup.Prompt,
+                    itemModGroup.ItemId);
+
                 modGroupCounter++;
             }
 
@@ -527,6 +687,11 @@ namespace LeafToAutomationImport
                 };
 
                 api.Post(printerAssociation);
+
+                KitchenPrinterItemMappingCounter++;
+
+                Console.WriteLine("Associated printer {0} with item {1}", printerAssociation.KitchenPrinterId,
+                    printerAssociation.ItemId);
             }
 
             return new ItemMapping {LeafId = leafItem.id, PosItem = item};
@@ -534,17 +699,24 @@ namespace LeafToAutomationImport
 
         private static void SetupMenu(Api api, LeafDataModel.Store leafStore)
         {
+            var tabs = api.Get(new GetMenuTabListAll());
+            var mainTab = tabs.MenuTabs.First(t => t.UserFriendlyId == "Menu");
+
             var panels = api.Get(new GetMenuPanelListAll());
 
-            var leftPanel = panels.MenuPanels.First(p => p.MenuPanelType == MenuPanelType.Left);
-            var categoryButtons = new List<MenuButton>();
+            var leftPanel = panels.MenuPanels.First(p => p.Id == mainTab.LeftPanelId);
 
             // Create navigation buttons for each category in the left panel
+            CreateMenuCategories(api, leafStore, leftPanel);
+        }
+
+        private static void CreateMenuCategories(Api api, LeafDataModel.Store leafStore, MenuPanel leftPanel)
+        {
             var currentRow = 0;
             var currentPage = 1;
             foreach (var category in leafStore.catalog.categories)
             {
-                if (currentRow > leftPanel.NumberOfRows)
+                if (currentRow > leftPanel.NumberOfRows - 1)
                 {
                     currentPage++;
                     currentRow = 0;
@@ -562,20 +734,24 @@ namespace LeafToAutomationImport
 
                 panel = api.Post(panel);
 
-                _categoryPanelMap.Add(category.id, panel.Id.GetValueOrDefault());
+                MenuPanelCounter++;
+
+                Console.WriteLine("Created menu panel for category {0}", category.name);
 
                 // Create a button on the left panel to navigate to the above panel
                 var button = new MenuButton
                 {
-                    MenuPanelId = panel.Id.GetValueOrDefault(),
+                    MenuPanelId = leftPanel.Id.GetValueOrDefault(),
                     MenuButtonType = MenuButtonType.Navigation,
                     Caption = category.name,
+                    ButtonFunction = panel.Id.GetValueOrDefault().ToString(),
                     Height = 1,
                     Width = 1,
                     BackColor = "#FF00B0F0",
                     XPosition = 0,
-                    YPosition = currentPage,
+                    YPosition = currentRow,
                     Page = currentPage,
+                    Hide = false,
                     Font = new Font
                     {
                         Name = "Segoe UI",
@@ -587,7 +763,73 @@ namespace LeafToAutomationImport
                 };
 
                 api.Post(button);
+
+                MenuButtonCounter++;
+
+                Console.WriteLine("Created navigation button for category {0}", category.name);
+
                 currentRow++;
+
+                // Create menu buttons for all of the items in this category
+                CreateMenuCategoryButtons(api, leafStore, panel, category.id);
+            }
+        }
+
+        private static void CreateMenuCategoryButtons(Api api, LeafDataModel.Store leafStore, MenuPanel categoryPanel,
+            string leafCategoryId)
+        {
+            var currentX = 0;
+            var currentY = 0;
+            var currentPage = 1;
+
+            foreach (var leafItem in leafStore.catalog.items.Where(i => i.category_id == leafCategoryId))
+            {
+                if (currentY > categoryPanel.NumberOfRows - 1)
+                {
+                    currentPage++;
+                    currentY = 0;
+                    currentX = 0;
+                }
+
+                var posItem = GetMapValue(_itemMap, leafItem.id);
+
+                // Create a button on the left panel to navigate to the above panel
+                var button = new MenuButton
+                {
+                    MenuPanelId = categoryPanel.Id.GetValueOrDefault(),
+                    MenuButtonType = MenuButtonType.Item,
+                    Caption = posItem.Name,
+                    ButtonFunction = posItem.Id.ToString(),
+                    Height = 1,
+                    Width = 1,
+                    BackColor = "#FF00B0F0",
+                    XPosition = currentX,
+                    YPosition = currentY,
+                    Page = currentPage,
+                    Hide = false,
+                    Font = new Font
+                    {
+                        Name = "Segoe UI",
+                        Size = 18,
+                        Color = "#FFFFFF",
+                        VerticalAlign = VerticalAlignment.Center,
+                        HorizontalAlign = HorizontalAlignment.Center
+                    }
+                };
+
+                api.Post(button);
+
+                MenuButtonCounter++;
+
+                Console.WriteLine("Created menu button for item {0}", posItem.Name);
+
+                currentX++;
+
+                if (currentX > categoryPanel.NumberOfColumns - 1)
+                {
+                    currentY++;
+                    currentX = 0;
+                }
             }
         }
 
@@ -597,6 +839,19 @@ namespace LeafToAutomationImport
                 return null;
 
             Guid tempId;
+            if (map.TryGetValue(key, out tempId))
+            {
+                return tempId;
+            }
+            return null;
+        }
+
+        private static T GetMapValue<T>(Dictionary<string, T> map, string key) where T : class
+        {
+            if (key.IsNullOrEmpty())
+                return null;
+
+            T tempId;
             if (map.TryGetValue(key, out tempId))
             {
                 return tempId;

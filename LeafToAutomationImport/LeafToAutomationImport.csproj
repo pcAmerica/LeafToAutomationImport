@@ -45,6 +45,9 @@
     <Reference Include="pcAmerica.Desktop.POS.ServiceModel">
       <HintPath>..\Lib\pcAmerica.Desktop.POS.ServiceModel.dll</HintPath>
     </Reference>
+    <Reference Include="PowerArgs">
+      <HintPath>..\packages\PowerArgs.2.6.0.1\lib\net40\PowerArgs.dll</HintPath>
+    </Reference>
     <Reference Include="ServiceStack.Common">
       <HintPath>..\Lib\ServiceStack.Common.dll</HintPath>
     </Reference>
@@ -84,7 +87,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="site_export_sample.json">
+    <None Include="packages.config" />
+    <None Include="site_export.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
