@@ -166,23 +166,26 @@ namespace LeafToAutomationImport
 
         private static void SetupStore(Api api, LeafDataModel.Store leafStore)
         {
-            var posStore = api.Get(new Store());
-            posStore.Name = leafStore.siteName;
-            posStore.Email = leafStore.siteEmail;
-            posStore.PhoneNumber = leafStore.sitePhone;
-            posStore.Address = new StoreAddress
+            var posStore = new Store
             {
-                City = leafStore.primary_address.city,
-                PostalCode = leafStore.primary_address.postalCode,
-                State = leafStore.primary_address.stateShort,
-                Street = leafStore.primary_address.address,
-                Street2 = leafStore.primary_address.address2,
-                Country = ""
+                Name = leafStore.siteName,
+                Email = leafStore.siteEmail,
+                PhoneNumber = leafStore.sitePhone,
+                UserFriendlyId = "100",
+                Address = new StoreAddress
+                {
+                    City = leafStore.primary_address.city,
+                    PostalCode = leafStore.primary_address.postalCode,
+                    State = leafStore.primary_address.stateShort,
+                    Street = leafStore.primary_address.address,
+                    Street2 = leafStore.primary_address.address2,
+                    Country = ""
+                }
             };
 
-            api.Put(posStore);
+            api.Post(posStore);
 
-            Log("Updated Store");
+            Log("Created Store");
         }
 
         private static void SetupTaxes(Api api, LeafDataModel.Store leafStore)
