@@ -16,6 +16,30 @@ namespace LeafToAutomationImport
 {
     internal class Program
     {
+        private struct Counters
+        {
+            public const string TaxRate = "TaxRate";
+            public const string TaxGroup = "TaxGroup";
+            public const string TaxGroupTaxRate = "TaxGroupTaxRate";
+            public const string Tender = "Tender";
+            public const string PaymentProfileTender = "PaymentProfileTender";
+            public const string KitchenPrinter = "KitchenPrinter";
+            public const string Jobcode = "Jobcode";
+            public const string Employee = "Employee";
+            public const string EmployeeEmail = "EmployeeEmail";
+            public const string EmployeePhone = "EmployeePhone";
+            public const string EmployeeJobcode = "EmployeeJobcode";
+            public const string Department = "Department";
+            public const string Modifier = "Modifier";
+            public const string ModifierGroup = "ModifierGroup";
+            public const string ModifierGroupMember = "ModifierGroupMember";
+            public const string Item = "Item";
+            public const string ItemModifierGroup = "ItemModifierGroup";
+            public const string KitchenPrinterItemMapping = "KitchenPrinterItemMapping";
+            public const string MenuPanel = "MenuPanel";
+            public const string MenuButton = "MenuButton";
+        }
+
         private class Mapping
         {
             public string LeafId;
@@ -53,26 +77,8 @@ namespace LeafToAutomationImport
         private static Dictionary<string, Guid> _modifierMap;
         private static Dictionary<string, ModifierGroup> _modifierGroupsMap;
         private static Dictionary<string, Item> _itemMap;
-        private static int TaxRateCounter;
-        private static int TaxGroupCounter;
-        private static int TaxGroupTaxRateCounter;
-        private static int TenderCounter;
-        private static int PaymentProfileTenderCounter;
-        private static int KitchenPrinterCounter;
-        private static int JobcodeCounter;
-        private static int EmployeeCounter;
-        private static int EmployeeEmailCounter;
-        private static int EmployeePhoneCounter;
-        private static int EmployeeJobcodeCounter;
-        private static int DepartmentCounter;
-        private static int ModifierCounter;
-        private static int ModifierGroupCounter;
-        private static int ModifierGroupMemberCounter;
-        private static int ItemCounter;
-        private static int ItemModifierGroupCounter;
-        private static int KitchenPrinterItemMappingCounter;
-        private static int MenuPanelCounter;
-        private static int MenuButtonCounter;
+
+        private static Dictionary<string, int> _counters;
 
         private static void Main(string[] args)
         {
@@ -87,6 +93,7 @@ namespace LeafToAutomationImport
                 _modifierMap = new Dictionary<string, Guid>();
                 _modifierGroupsMap = new Dictionary<string, ModifierGroup>();
                 _itemMap = new Dictionary<string, Item>();
+                _counters = new Dictionary<string, int>();
 
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
@@ -114,41 +121,47 @@ namespace LeafToAutomationImport
 
                 PrintResults();
 
-                Console.WriteLine("Import complete, duration: {0}", stopwatch.Elapsed);
+                Log("");
+                Log("Import complete, duration: {0:%h}h {0:%m}m {0:%s}s", stopwatch.Elapsed);
             }
             catch (ArgException ex)
             {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ArgUsage.GenerateUsageFromTemplate<CommandLineArgs>());
+                Log(ex.ToString());
+                Log(ArgUsage.GenerateUsageFromTemplate<CommandLineArgs>().ToString());
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Log(ex.ToString());
             }
+        }
+
+        private static void IncrementCounter(string counterName)
+        {
+            if (_counters.ContainsKey(counterName))
+            {
+                _counters[counterName] = _counters[counterName] + 1;
+            }
+            else
+            {
+                _counters[counterName] = 1;
+            }
+        }
+
+        private static void Log(string message, params object[] args)
+        {
+            Console.WriteLine(message, args);
         }
 
         private static void PrintResults()
         {
-            Console.WriteLine("TaxRateCounter; : {0}", TaxRateCounter);
-            Console.WriteLine("TaxGroupCounter : {0}", TaxGroupCounter);
-            Console.WriteLine("TaxGroupTaxRateCounter : {0}", TaxGroupTaxRateCounter);
-            Console.WriteLine("TenderCounter : {0}", TenderCounter);
-            Console.WriteLine("PaymentProfileTenderCounter : {0}", PaymentProfileTenderCounter);
-            Console.WriteLine("KitchenPrinterCounter : {0}", KitchenPrinterCounter);
-            Console.WriteLine("JobcodeCounter : {0}", JobcodeCounter);
-            Console.WriteLine("EmployeeCounter : {0}", EmployeeCounter);
-            Console.WriteLine("EmployeeEmailCounter : {0}", EmployeeEmailCounter);
-            Console.WriteLine("EmployeePhoneCounter : {0}", EmployeePhoneCounter);
-            Console.WriteLine("EmployeeJobcodeCounter : {0}", EmployeeJobcodeCounter);
-            Console.WriteLine("DepartmentCounter : {0}", DepartmentCounter);
-            Console.WriteLine("ModifierCounter : {0}", ModifierCounter);
-            Console.WriteLine("ModifierGroupCounter : {0}", ModifierGroupCounter);
-            Console.WriteLine("ModifierGroupMemberCounter : {0}", ModifierGroupMemberCounter);
-            Console.WriteLine("ItemCounter : {0}", ItemCounter);
-            Console.WriteLine("ItemModifierGroupCounter : {0}", ItemModifierGroupCounter);
-            Console.WriteLine("KitchenPrinterItemMappingCounter : {0}", KitchenPrinterItemMappingCounter);
-            Console.WriteLine("MenuPanelCounter : {0}", MenuPanelCounter);
-            Console.WriteLine("MenuButtonCounter : {0}", MenuButtonCounter);
+            var counters = _counters.OrderBy(pair => pair.Key).ToList();
+
+            Log("");
+            Log("==============");
+            Log("IMPORT RESULTS");
+            Log("==============");
+
+            counters.ForEach(pair => Log("{0} : {1}", pair.Key, pair.Value));
         }
 
         private static void SetupStore(Api api, LeafDataModel.Store leafStore)
@@ -169,7 +182,7 @@ namespace LeafToAutomationImport
 
             api.Put(posStore);
 
-            Console.WriteLine("Updated Store");
+            Log("Updated Store");
         }
 
         private static void SetupTaxes(Api api, LeafDataModel.Store leafStore)
@@ -224,14 +237,14 @@ namespace LeafToAutomationImport
 
             taxRate = api.Post(taxRate);
 
-            TaxRateCounter++;
+            IncrementCounter(Counters.TaxRate);
 
-            Console.WriteLine("Created tax rate {0}", taxRate.Name);
+            Log("Created tax rate {0}", taxRate.Name);
 
             var taxGroup = new TaxGroup {Name = taxName};
             taxGroup = api.Post(taxGroup);
 
-            TaxGroupCounter++;
+            IncrementCounter(Counters.TaxGroup);
 
             var association = new TaxGroupTaxRate
             {
@@ -241,9 +254,9 @@ namespace LeafToAutomationImport
 
             api.Post(association);
 
-            TaxGroupTaxRateCounter++;
+            IncrementCounter(Counters.TaxGroupTaxRate);
 
-            Console.WriteLine("Created tax group {0}", taxGroup.Name);
+            Log("Created tax group {0}", taxGroup.Name);
 
             return new Mapping {LeafId = taxName, PosId = taxGroup.Id.GetValueOrDefault()};
         }
@@ -261,7 +274,7 @@ namespace LeafToAutomationImport
                 AllowsRefunds = true,
                 IsActive = true,
                 IsVisible = true,
-                LongDescription = leafTender.paySiteDesc,
+                LongDescription = leafTender.paySiteDesc.Left(30),
                 NumberOfReceipts = 1,
                 ShortDescription = leafTender.payTypeName.Left(4),
                 TenderKind = TenderKind.General
@@ -302,9 +315,9 @@ namespace LeafToAutomationImport
 
             tender = api.Post(tender);
 
-            TenderCounter++;
+            IncrementCounter(Counters.Tender);
 
-            Console.WriteLine("Created tender {0}", tender.LongDescription);
+            Log("Created tender {0}", tender.LongDescription);
 
             var tenderProfileAssociation = new PaymentProfileTender
             {
@@ -315,9 +328,9 @@ namespace LeafToAutomationImport
 
             api.Post(tenderProfileAssociation);
 
-            PaymentProfileTenderCounter++;
+            IncrementCounter(Counters.PaymentProfileTender);
 
-            Console.WriteLine("Associated tender {0} with payment profile {1}", tender.LongDescription,
+            Log("Associated tender {0} with payment profile {1}", tender.LongDescription,
                 station.PaymentProfile.Name);
         }
 
@@ -343,9 +356,9 @@ namespace LeafToAutomationImport
 
             printer = api.Post(printer);
 
-            KitchenPrinterCounter++;
+            IncrementCounter(Counters.KitchenPrinter);
 
-            Console.WriteLine("Created printer {0}", printer.Name);
+            Log("Created printer {0}", printer.Name);
 
             return new Mapping {LeafId = leafPrinter.id, PosId = printer.Id.GetValueOrDefault()};
         }
@@ -379,9 +392,9 @@ namespace LeafToAutomationImport
 
             jobCode = api.Post(jobCode);
 
-            JobcodeCounter++;
+            IncrementCounter(Counters.Jobcode);
 
-            Console.WriteLine("Created jobcode {0}", jobCode.Name);
+            Log("Created jobcode {0}", jobCode.Name);
 
             return new Mapping {LeafId = leafJobCode.id, PosId = jobCode.Id.GetValueOrDefault()};
         }
@@ -413,9 +426,9 @@ namespace LeafToAutomationImport
 
             employee = api.Post(employee);
 
-            EmployeeCounter++;
+            IncrementCounter(Counters.Employee);
 
-            Console.WriteLine("Created employee {0}", employee.DisplayName);
+            Log("Created employee {0}", employee.DisplayName);
 
             if (!leafUser.email.IsNullOrEmpty())
             {
@@ -427,7 +440,7 @@ namespace LeafToAutomationImport
                 };
                 api.Post(email);
 
-                EmployeeEmailCounter++;
+                IncrementCounter(Counters.EmployeeEmail);
             }
 
             if (!leafUser.phone.IsNullOrEmpty())
@@ -440,7 +453,7 @@ namespace LeafToAutomationImport
                 };
                 api.Post(phone);
 
-                EmployeePhoneCounter++;
+                IncrementCounter(Counters.EmployeePhone);
             }
 
             foreach (var leafJobCode in leafUser.job_code_users)
@@ -452,7 +465,7 @@ namespace LeafToAutomationImport
                 };
                 api.Post(jobCode);
 
-                EmployeeJobcodeCounter++;
+                IncrementCounter(Counters.EmployeeJobcode);
             }
         }
 
@@ -485,9 +498,9 @@ namespace LeafToAutomationImport
 
             department = api.Post(department);
 
-            DepartmentCounter++;
+            IncrementCounter(Counters.Department);
 
-            Console.WriteLine("Created department {0}", department.Description);
+            Log("Created department {0}", department.Description);
 
             return new Mapping {LeafId = leafCategory.id, PosId = department.Id.GetValueOrDefault()};
         }
@@ -534,9 +547,9 @@ namespace LeafToAutomationImport
 
             modifier = api.Post(modifier);
 
-            ModifierCounter++;
+            IncrementCounter(Counters.Modifier);
 
-            Console.WriteLine("Created modifier {0}", modifier.Name);
+            Log("Created modifier {0}", modifier.Name);
 
             return new Mapping {LeafId = leafModifier.id, PosId = modifier.Id.GetValueOrDefault()};
         }
@@ -573,14 +586,15 @@ namespace LeafToAutomationImport
                 MinToSelect = minToSelect,
                 MaxToSelect = maxToSelect,
                 Name = leafModifierGroup.groupName,
-                Prompt = String.Format("Select a {0}", leafModifierGroup.groupName)
+                Prompt = String.Format("Select a {0}", leafModifierGroup.groupName),
+                AllowSubmodifiers = true
             };
 
             group = api.Post(group);
 
-            ModifierGroupCounter++;
+            IncrementCounter(Counters.ModifierGroup);
 
-            Console.WriteLine("Created modifier group {0}", group.Name);
+            Log("Created modifier group {0}", group.Name);
 
             foreach (var modMember in from leafModMember in leafModifierGroup.modifier_group_sub_items
                 where _modifierMap.ContainsKey(leafModMember.modifier_id)
@@ -588,14 +602,14 @@ namespace LeafToAutomationImport
                 {
                     ItemId = _modifierMap[leafModMember.modifier_id],
                     ModifierGroupId = @group.Id.GetValueOrDefault(),
-                    SortOrder = leafModMember.position
+                    SortOrder = leafModMember.position,
                 })
             {
                 api.Post(modMember);
 
-                ModifierGroupMemberCounter++;
+                IncrementCounter(Counters.ModifierGroupMember);
 
-                Console.WriteLine("Created modifier group member {0}", modMember.ItemId);
+                Log("Created modifier group member {0}", modMember.ItemId);
             }
 
             return new ModGroupMapping {LeafId = leafModifierGroup.id, PosModifierGroup = group};
@@ -647,9 +661,9 @@ namespace LeafToAutomationImport
 
             item = api.Post(item);
 
-            ItemCounter++;
+            IncrementCounter(Counters.Item);
 
-            Console.WriteLine("Created item {0}", item.Name);
+            Log("Created item {0}", item.Name);
 
             int modGroupCounter = 0;
             foreach (var leafModGroup in leafItem.modifier_item_groups)
@@ -666,13 +680,14 @@ namespace LeafToAutomationImport
                     MinToSelect = modGroup.MinToSelect,
                     ModifierGroupId = modGroup.Id.GetValueOrDefault(),
                     Prompt = modGroup.Prompt,
-                    SortOrder = modGroupCounter
+                    SortOrder = modGroupCounter,
+                    AllowSubmodifiers = modGroup.AllowSubmodifiers
                 };
                 api.Post(itemModGroup);
 
-                ItemModifierGroupCounter++;
+                IncrementCounter(Counters.ItemModifierGroup);
 
-                Console.WriteLine("Associated modifier group {0} with item {1}", itemModGroup.Prompt,
+                Log("Associated modifier group {0} with item {1}", itemModGroup.Prompt,
                     itemModGroup.ItemId);
 
                 modGroupCounter++;
@@ -688,9 +703,9 @@ namespace LeafToAutomationImport
 
                 api.Post(printerAssociation);
 
-                KitchenPrinterItemMappingCounter++;
+                IncrementCounter(Counters.KitchenPrinterItemMapping);
 
-                Console.WriteLine("Associated printer {0} with item {1}", printerAssociation.KitchenPrinterId,
+                Log("Associated printer {0} with item {1}", printerAssociation.KitchenPrinterId,
                     printerAssociation.ItemId);
             }
 
@@ -707,11 +722,13 @@ namespace LeafToAutomationImport
             var leftPanel = panels.MenuPanels.First(p => p.Id == mainTab.LeftPanelId);
 
             // Create navigation buttons for each category in the left panel
-            CreateMenuCategories(api, leafStore, leftPanel);
+            CreateMenuCategories(api, leafStore, mainTab, leftPanel);
         }
 
-        private static void CreateMenuCategories(Api api, LeafDataModel.Store leafStore, MenuPanel leftPanel)
+        private static void CreateMenuCategories(Api api, LeafDataModel.Store leafStore, MenuTab mainTab, MenuPanel leftPanel)
         {
+            bool isFirst = true; // We'll make the 1st panel the default
+
             var currentRow = 0;
             var currentPage = 1;
             foreach (var category in leafStore.catalog.categories)
@@ -734,9 +751,16 @@ namespace LeafToAutomationImport
 
                 panel = api.Post(panel);
 
-                MenuPanelCounter++;
+                if (isFirst)
+                {
+                    isFirst = false;
+                    mainTab.DefaultMainPanelId = panel.Id;
+                    api.Put(mainTab);
+                }
 
-                Console.WriteLine("Created menu panel for category {0}", category.name);
+                IncrementCounter(Counters.MenuPanel);
+
+                Log("Created menu panel for category {0}", category.name);
 
                 // Create a button on the left panel to navigate to the above panel
                 var button = new MenuButton
@@ -764,9 +788,9 @@ namespace LeafToAutomationImport
 
                 api.Post(button);
 
-                MenuButtonCounter++;
+                IncrementCounter(Counters.MenuButton);
 
-                Console.WriteLine("Created navigation button for category {0}", category.name);
+                Log("Created navigation button for category {0}", category.name);
 
                 currentRow++;
 
@@ -819,9 +843,9 @@ namespace LeafToAutomationImport
 
                 api.Post(button);
 
-                MenuButtonCounter++;
+                IncrementCounter(Counters.MenuButton);
 
-                Console.WriteLine("Created menu button for item {0}", posItem.Name);
+                Log("Created menu button for item {0}", posItem.Name);
 
                 currentX++;
 
