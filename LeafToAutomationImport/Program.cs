@@ -126,7 +126,7 @@ namespace LeafToAutomationImport
             }
             catch (ArgException ex)
             {
-                Log(ex.ToString());
+                Log(ex.Message);
                 Log(ArgUsage.GenerateUsageFromTemplate<CommandLineArgs>().ToString());
             }
             catch (Exception ex)
