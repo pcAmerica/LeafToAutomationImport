@@ -34,6 +34,7 @@ namespace LeafToAutomationImport
             public const string ModifierGroup = "ModifierGroup";
             public const string ModifierGroupMember = "ModifierGroupMember";
             public const string Item = "Item";
+            public const string ItemBarcode = "ItemBarcode";
             public const string ItemModifierGroup = "ItemModifierGroup";
             public const string KitchenPrinterItemMapping = "KitchenPrinterItemMapping";
             public const string MenuPanel = "MenuPanel";
@@ -663,10 +664,21 @@ namespace LeafToAutomationImport
                 item.Name = item.UserFriendlyId;
 
             item = api.Post(item);
-
+            
             IncrementCounter(Counters.Item);
 
             Log("Created item {0}", item.Name);
+
+            if (!leafItem.barcode.IsNullOrWhiteSpace())
+            {
+                var sku = new ItemBarcode {Barcode = leafItem.barcode, ItemId = item.Id.GetValueOrDefault()};
+
+                sku = api.Post(sku);
+
+                IncrementCounter(Counters.ItemBarcode);
+
+                Log("Created barcode {0} for item {1}", sku.Barcode, item.Name);
+            }
 
             int modGroupCounter = 0;
             foreach (var leafModGroup in leafItem.modifier_item_groups)
